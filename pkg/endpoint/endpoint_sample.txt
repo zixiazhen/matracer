@@ -1,0 +1,181 @@
+
+
+{
+    "kind": "Endpoints",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "manifest-agent",
+        "namespace": "default",
+        "selfLink": "/api/v1/namespaces/default/endpoints/manifest-agent",
+        "uid": "29bd6b49-dbf6-11e7-a23f-005056accb2f",
+        "resourceVersion": "55161195",
+        "creationTimestamp": "2017-12-08T08:59:56Z",
+        "labels": {
+            "app": "manifest-agent",
+            "env": "qa-perf",
+            "location": "labs"
+        }
+    },
+    "subsets": [
+        {
+            "addresses": [
+                {
+                    "ip": "10.10.144.13",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-523ju",
+                        "uid": "79e0729d-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161142"
+                    }
+                },
+                {
+                    "ip": "10.10.144.14",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-b6oqm",
+                        "uid": "79e08733-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161134"
+                    }
+                },
+                {
+                    "ip": "10.10.144.15",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-xxeh2",
+                        "uid": "79e099d7-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161128"
+                    }
+                },
+                {
+                    "ip": "10.10.144.16",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-3bvkz",
+                        "uid": "79e091f0-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161121"
+                    }
+                },
+                {
+                    "ip": "10.10.144.17",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-y36p7",
+                        "uid": "79e096cc-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161177"
+                    }
+                },
+                {
+                    "ip": "10.10.144.18",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-h8to5",
+                        "uid": "79e0b114-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161185"
+                    }
+                },
+                {
+                    "ip": "10.10.144.19",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-wm0k1",
+                        "uid": "79e0a325-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161180"
+                    }
+                },
+                {
+                    "ip": "10.10.224.10",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-64jir",
+                        "uid": "79e044ca-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161110"
+                    }
+                },
+                {
+                    "ip": "10.10.224.11",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-aqjp1",
+                        "uid": "79e073bd-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161171"
+                    }
+                },
+                {
+                    "ip": "10.10.224.12",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-h1izy",
+                        "uid": "79e09c27-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161176"
+                    }
+                },
+                {
+                    "ip": "10.10.224.13",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-kb2dx",
+                        "uid": "79e0a181-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161156"
+                    }
+                },
+                {
+                    "ip": "10.10.224.14",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-qxznh",
+                        "uid": "79e08a71-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161166"
+                    }
+                },
+                {
+                    "ip": "10.10.224.15",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-435zi",
+                        "uid": "79e093c7-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161163"
+                    }
+                },
+                {
+                    "ip": "10.10.224.16",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-62hcf",
+                        "uid": "79e0b208-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161188"
+                    }
+                },
+                {
+                    "ip": "10.10.224.17",
+                    "targetRef": {
+                        "kind": "Pod",
+                        "namespace": "default",
+                        "name": "manifest-agent-mb3i4",
+                        "uid": "79e0a633-e4e4-11e7-a23f-005056accb2f",
+                        "resourceVersion": "55161192"
+                    }
+                }
+            ],
+            "ports": [
+                {
+                    "port": 8081,
+                    "protocol": "TCP"
+                }
+            ]
+        }
+    ]
+}
