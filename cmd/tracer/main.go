@@ -154,8 +154,6 @@ func printResult(result map[string]string) {
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	fmt.Print(string(b))
-
 	//Print the result
 	fmt.Printf(" ================ %v ===============  \n", time.Now())
 	fmt.Print(string(b))
