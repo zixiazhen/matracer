@@ -29,7 +29,7 @@ func main() {
 
 	/* endpoint full url */
 	endpointFullPath := apiserver + endpointuri + endpointName
-	fmt.Printf("endpointFullPath: %s \n",endpointFullPath)
+	//fmt.Printf("endpointFullPath: %s \n",endpointFullPath)
 
 	/* ticker */
 	ticker := time.NewTicker(time.Duration(frequency) * time.Second)
@@ -100,7 +100,7 @@ func run(endpointFullPath string, stop chan error) {
 
 		//1. Create the MA status rest call url
 		maStatusRestCall := fmt.Sprintf("http://%s:%v/status", epIPAddr, port)
-		fmt.Printf("maStatusRestCall: %s \n",maStatusRestCall)
+		//fmt.Printf("maStatusRestCall: %s \n",maStatusRestCall)
 
 		//2. Get steam ID from MA Status
 		maStatusRaw, err := rest.R().Get(maStatusRestCall)
