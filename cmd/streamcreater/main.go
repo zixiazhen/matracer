@@ -7,6 +7,7 @@ import (
 	"matracer/pkg/api"
 	rest "gopkg.in/resty.v1"
 	"math/rand"
+	//"encoding/json"
 	"encoding/json"
 )
 
@@ -25,24 +26,29 @@ func init(){
 	rand.Seed(time.Now().UnixNano())
 }
 
+var (
+	nsa    string
+	num 	int
+	action string
+)
+
 func main() {
-	var (
-		nsa    string
-		num 	int
-		action string
-	)
 
 	/* Handling flags */
 	flag.StringVar(&nsa, "nsa", "http://10.10.224.29:9013", "url for nsa server, e.g., http://10.10.224.29:9013")
 	flag.IntVar(&num, "num", 5, "watch frequency")
-	flag.StringVar(&action, "action", "create", "create streams")
+	flag.StringVar(&action, "action", "create", "support create/deleteall")
 	flag.Parse()
 
-	//For now, only support create.
-	Create(nsa, num)
+	switch action {
+	case "create":
+		Create()
+	case "deleteall":
+		DeleteAll()
+	}
 }
 
-func Create(nsa string, num int){
+func Create(){
 
 	fmt.Printf("Start Creating \n")
 	defer fmt.Printf("Finish Creating \n")
@@ -55,10 +61,7 @@ func Create(nsa string, num int){
 		streamConf := generateStream()
 		streams = append(streams, streamConf)
 	}
-	fmt.Printf("streamConf: %v \n", streams)
 
-	bytes, _ := json.Marshal(streams)
-	fmt.Printf("stream json: \n %v \n", string(bytes))
 
 	resp, err :=  rest.R().
 		SetHeader("Content-Type", "application/json").
@@ -72,8 +75,32 @@ func Create(nsa string, num int){
 	fmt.Printf("resp: %v \n", resp)
 }
 
-func Delete(){
+func DeleteAll(){
+	fullPath := nsa + "/configuration"
+	var streams []api.StreamCfg
+	resp, err :=  rest.R().
+		SetHeader("Content-Type", "application/json").
+		Get(fullPath)
+	if err != nil {
+		fmt.Printf("Get Stream failed! %v \n", err.Error())
+		return
+	}
 
+	fmt.Printf("resp: %v \n", resp)
+	result := json.Unmarshal(resp.Body(), streams)
+	fmt.Printf("result: %v \n", result)
+
+	for i, _ := range streams{
+		url := fmt.Sprintf("%v/%v", fullPath, streams[i].StreamID)
+		delResp, err :=  rest.R().
+			SetHeader("Content-Type", "application/json").
+			Delete(url)
+		if err != nil {
+			fmt.Printf("Delete Stream failed! %v \n", err.Error())
+			return
+		}
+		fmt.Printf("delResp: %v \n", delResp)
+	}
 }
 
 func Get() {
