@@ -1,0 +1,65 @@
+[{
+    "streamName": "LOCAL_SD_GBR_16300_64",
+    "streamId": "5569341253596488164",
+    "expiry": "2018-02-04T20:00:00Z",
+    "Transports": [{
+        "url": "http://ccr.linear-nat-dash.xcr.comcast.net/dash/LOCAL_SD_GBR_16300_64_DASH/LOCAL_SD_GBR_16300_64_DASH.mpd",
+        "avgBitrate": 1.875,
+        "maxBitrate": 1.875
+    }],
+    "archiveConfig": {
+        "archiveTime": 72,
+        "reArchiveTime": 24,
+        "archivalStartTime": "5:00PM",
+        "archivalDuration": 10,
+        "archivalPause": 5
+    }
+}, {
+    "streamName": "USA_SD_NAT_4183_0_7503892744946620183",
+    "streamId": "7503892744946620185",
+    "expiry": "2018-02-04T20:00:00Z",
+    "Transports": [{
+        "url": "http://ccr.linear-nat-dash.xcr.comcast.net/dash/USA_SD_NAT_4183_0_7503892744946620183/USA_SD_NAT_4183_0_7503892744946620163_DASH.mpd",
+        "avgBitrate": 1.875,
+        "maxBitrate": 1.875
+    }],
+    "archiveConfig": {
+        "archiveTime": 72,
+        "reArchiveTime": 24,
+        "archivalStartTime": "02:00AM",
+        "archivalDuration": 10,
+        "archivalPause": 5
+    }
+}, {
+    "streamName": "USA_SD_NAT_4184_1_7503892744946620999",
+    "streamId": "7503892744946620997",
+    "expiry": "2018-01-29T20:00:00Z",
+    "Transports": [{
+        "url": "http://ccr.linear-nat-dash.xcr.comcast.net/dash/USA_SD_NAT_4183_0_7503892744946620183/USA_SD_NAT_4183_0_7503892744946620163_DASH.mpd",
+        "avgBitrate": 1.875,
+        "maxBitrate": 1.875
+    }],
+    "archiveConfig": {
+        "archiveTime": 72,
+        "reArchiveTime": 24,
+        "archivalStartTime": "05:00PM",
+        "archivalDuration": 10,
+        "archivalPause": 5
+    }
+}, {
+    "streamName": "USA_SD_NAT_4195_0_7503892744946620000",
+    "streamId": "7503892744946620001",
+    "expiry": "2018-01-29T20:00:00Z",
+    "Transports": [{
+        "url": "http://ccr.linear-nat-dash.xcr.comcast.net/dash/USA_SD_NAT_4183_0_7503892744946620183/USA_SD_NAT_4183_0_7503892744946620163_DASH.mpd",
+        "avgBitrate": 1.875,
+        "maxBitrate": 1.875
+    }],
+    "archiveConfig": {
+        "archiveTime": 72,
+        "reArchiveTime": 24,
+        "archivalStartTime": "02:00AM",
+        "archivalDuration": 10,
+        "archivalPause": 5
+    }
+}]

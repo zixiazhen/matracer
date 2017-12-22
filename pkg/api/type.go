@@ -2,6 +2,53 @@ package api
 
 import 	"time"
 
+
+/*
+//Sample stream:
+
+ "streamName": "USA_SD_NAT_4195_0_7503892744946620000",
+    "streamId": "7503892744946620001",
+    "expiry": "2018-01-29T20:00:00Z",
+    "Transports": [{
+        "url": "http://ccr.linear-nat-dash.xcr.comcast.net/dash/USA_SD_NAT_4183_0_7503892744946620183/USA_SD_NAT_4183_0_7503892744946620163_DASH.mpd",
+        "avgBitrate": 1.875,
+        "maxBitrate": 1.875
+    }],
+    "archiveConfig": {
+        "archiveTime": 72,
+        "reArchiveTime": 24,
+        "archivalStartTime": "02:00AM",
+        "archivalDuration": 10,
+        "archivalPause": 5
+    }
+*/
+
+type StreamCfg struct {
+	StreamName    string          `json:"streamName"`
+	StreamID      string          `json:"streamId"`
+	Expiry        string          `json:"expiry,omitempty"`
+	State         uint8           `json:"state, omitempty"`
+	Transports    [1]TransportCfg `json:"Transports"`
+	ArchiveConfig ArchiveCfg      `json:"archiveConfig"`
+	NoDeDupe      bool            `json:"noDeDupe,omitempty"`
+}
+
+type ArchiveCfg struct {
+	ArchiveTime       uint32 `json:"archiveTime"`
+	ReArchiveTime     uint32 `json:"reArchiveTime"`
+	ArchivalStartTime string `json:"archivalStartTime"`
+	ArchivalDuration  uint32 `json:"archivalDuration"`
+	ArchivalPause     uint32 `json:"archivalPause"`
+}
+
+type TransportCfg struct {
+	URL        string  `json:"url"`
+	AvgBitrate float32 `json:"avgBitrate"`
+	MaxBitrate float32 `json:"maxBitrate"`
+}
+
+
+
 type Endpoints struct {
 	Subsets []EndpointSubset `json:"subsets"`
 }

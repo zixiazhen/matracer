@@ -1,0 +1,21 @@
+cisco@Bronze2 ~/rio-k8s $ curl 10.10.224.14:8081/status
+{
+  "StartTime": "2017-12-19T17:46:04.954887312Z",
+  "MpdURL": "http://172.22.111.238/starzkids_pillar02/manifest.mpd",
+  "StreamID": "232250216232250212",
+  "MpdLastRequestedTime": "2017-12-19T21:47:08.408278473Z",
+  "MpdLastReceivedTime": "2017-12-19T21:47:08.408278473Z",
+  "MpdPollIntervalMax": 10000000000,
+  "MpdPollIntervalMin": 2000000000,
+  "MpdLivePoint": "2017-12-19T21:47:27.719796Z",
+  "MpdLastPublishTime": "2017-12-19T21:47:31.696357Z",
+  "MpdPollSuccessCount": 7087,
+  "MpdPollFailureCount": 1,
+  "MpdLivePointDrift": 19311517527,
+  "MpdDriftCorrect": 0,
+  "ActiveRecordings": 0,
+  "ActiveRecordingsWithErr": 0,
+  "ActiveBatches": 0,
+  "MpdDropped": 0,
+  "ContentDropped": 0
+}
