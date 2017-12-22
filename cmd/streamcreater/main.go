@@ -76,8 +76,8 @@ func Create(){
 }
 
 func DeleteAll(){
+
 	fullPath := nsa + "/configuration"
-	var streams []api.StreamCfg
 	resp, err :=  rest.R().
 		SetHeader("Content-Type", "application/json").
 		Get(fullPath)
@@ -87,8 +87,9 @@ func DeleteAll(){
 	}
 
 	fmt.Printf("resp: %v \n", resp)
-	result := json.Unmarshal(resp.Body(), streams)
-	fmt.Printf("result: %v \n", result)
+	streams := make([]api.StreamCfg,0)
+	json.Unmarshal(resp.Body(), &streams)
+	fmt.Printf("%#v", len(streams))
 
 	for i, _ := range streams{
 		url := fmt.Sprintf("%v/%v", fullPath, streams[i].StreamID)
