@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 	"matracer/pkg/api"
 	rest "gopkg.in/resty.v1"
 	"math/rand"
+	"encoding/json"
 )
 
 const (
@@ -13,11 +15,15 @@ const (
 	CreateStreans ACTION = "create"
 	GetALlStreams ACTION = "getall"
 	DeleteALlStreams ACTION = "deleteall"
-	high = 9999999999999999999
-	low =  1000000000000000000
+	high = 999999999999999999
+	low =  100000000000000000
 )
 
 type ACTION string
+
+func init(){
+	rand.Seed(time.Now().UnixNano())
+}
 
 func main() {
 	var (
@@ -50,6 +56,9 @@ func Create(nsa string, num int){
 		streams = append(streams, streamConf)
 	}
 	fmt.Printf("streamConf: %v \n", streams)
+
+	bytes, _ := json.Marshal(streams)
+	fmt.Printf("stream json: \n %v \n", string(bytes))
 
 	resp, err :=  rest.R().
 		SetHeader("Content-Type", "application/json").
