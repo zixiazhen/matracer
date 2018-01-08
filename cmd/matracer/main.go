@@ -8,6 +8,7 @@ import (
 	"time"
 
 	rest "gopkg.in/resty.v1"
+	"os"
 )
 
 const (
@@ -133,6 +134,9 @@ func run(endpointFullPath string, stop chan error) {
 				//add a record result
 				result[epObjRef.Name] = maStatus.StreamID + "****"
 				result[endpointsMap[anotherEndpoint].Name] = maStatus.StreamID + "****"
+
+				//create a error file in /tmp folder
+				createFile()
 			} else {
 				streamMap[maStatus.StreamID] = epIPAddr
 				//add a record result
@@ -146,6 +150,23 @@ func run(endpointFullPath string, stop chan error) {
 
 	//Print result
 	printResult(result)
+}
+
+var path = "/tmp/maerror.log"
+func createFile() {
+	// detect if file exists
+	var _, err = os.Stat(path)
+
+	// create file if not exists
+	if os.IsNotExist(err) {
+		var file, err = os.Create(path)
+		if err != nil {
+			fmt.Println("err : %v \n", err)
+			return
+			}
+		defer file.Close()
+		fmt.Println("==> done creating file", path)
+	}
 }
 
 func printResult(result map[string]string) {

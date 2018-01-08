@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"time"
 	"github.com/samuel/go-zookeeper/zk"
+	"fmt"
 )
 
 const (
@@ -13,30 +13,32 @@ const (
 
 func main() {
 	var (
-		apiserver    string
+		server    string
 		//frequency int
 	)
 
 	/* Handling flags */
-	flag.StringVar(&apiserver, "apiserver", "http://127.0.0.1:8080", "url for k8s api server, e.g., http://127.0.0.1:8080")
+	flag.StringVar(&server, "server", "http://192.168.3.130:2181", "url for zk  server, e.g., http://192.168.3.130:2181")
 	//flag.IntVar(&frequency, "frequency", 5, "watch frequency")
 	flag.Parse()
 
-
 	//ZK
-	c, _, err := zk.Connect([]string{"127.0.0.1"}, time.Second) //*10)
+	c, _, err := zk.Connect([]string{"192.168.3.130"}, time.Second) //*10)
 	if err != nil {
-		panic(err)
+		fmt.Printf("Error connecting to zk: %+v", err)
+		//panic(err)
 	}
-	children, stat, ch, err := c.ChildrenW("/")
+
+	_, _, ch, err := c.ChildrenW("/ActiveStreams")
 	if err != nil {
-		panic(err)
+		fmt.Printf("== err: %+v \n", err)
 	}
-	fmt.Printf("%+v %+v\n", children, stat)
-	e := <-ch
-	fmt.Printf("%+v\n", e)
 
-
-
-
+	fmt.Printf("==== Start Watching ZK ====! \n")
+	for {
+		select {
+		case event := <- ch:
+			fmt.Printf("==== [%v] - event: %+v \n", time.Now(), event)
+		}
+	}
 }
