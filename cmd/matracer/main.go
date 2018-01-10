@@ -95,7 +95,6 @@ func traceMA(errChl chan error, stop chan error){
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Printf("%v", ">>>> run goTraceMA() \n")
 			goTraceMA(maEndpointFullPath, stop, errChl)
 		case err := <-stop:
 			ticker.Stop()
@@ -150,8 +149,6 @@ func goCreateAndDeleteStream(nsaEndpointFullPath string){
 		//4. Delete all streams
 		stream.DeleteAll(nsaRestCall)
 	}
-
-
 
 }
 
@@ -216,8 +213,8 @@ func goTraceMA(endpointFullPath string, stop chan error, errChl chan error) {
 				fmt.Printf("\n")
 
 				//add a record result
-				result[epObjRef.Name] = maStatus.StreamID + "	-*-"
-				result[endpointsMap[anotherEndpoint].Name] = maStatus.StreamID + "	-*-"
+				result[epObjRef.Name] = maStatus.StreamID + "----"
+				result[endpointsMap[anotherEndpoint].Name] = maStatus.StreamID + "----"
 
 				//Notify stream creater to stop
 				errChl <- fmt.Errorf("%v","Multiple MA hold the same stream! \n")

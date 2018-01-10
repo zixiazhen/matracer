@@ -17,8 +17,8 @@ const (
 
 func Create(nsa string, num int){
 
-	fmt.Printf("Start Creating \n")
-	defer fmt.Printf("Finish Creating \n")
+	//fmt.Printf("Start Creating \n")
+	//defer fmt.Printf("Finish Creating \n")
 
 	/* endpoint full url */
 	fullPath := nsa + "/addstreams"
@@ -29,7 +29,6 @@ func Create(nsa string, num int){
 		streams = append(streams, streamConf)
 	}
 
-
 	resp, err :=  rest.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(streams).
@@ -39,7 +38,7 @@ func Create(nsa string, num int){
 		return
 	}
 
-	fmt.Printf("resp: %v \n", resp)
+	fmt.Printf("Created %v streams. resp status code: %v \n", num, resp.StatusCode())
 }
 
 func DeleteAll(nsa string){
@@ -56,7 +55,7 @@ func DeleteAll(nsa string){
 	fmt.Printf("resp: %v \n", resp)
 	streams := make([]api.StreamCfg,0)
 	json.Unmarshal(resp.Body(), &streams)
-	fmt.Printf("%#v", len(streams))
+	//fmt.Printf("%#v", len(streams))
 
 	for i, _ := range streams{
 		url := fmt.Sprintf("%v/%v", fullPath, streams[i].StreamID)
@@ -67,7 +66,7 @@ func DeleteAll(nsa string){
 			fmt.Printf("Delete Stream failed! %v \n", err.Error())
 			return
 		}
-		fmt.Printf("delResp: %v \n", delResp)
+		fmt.Printf("del stream status code: %v \n", delResp.StatusCode())
 	}
 }
 
