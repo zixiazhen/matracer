@@ -50,7 +50,7 @@ func main() {
 	//Create and delete stream
 	flag.BoolVar(&enableStreamCreation, "enablestream", false, "Enable create and delete stream.")
 	flag.IntVar(&numOfStream, "numofstream", 2, "The number of stream that will be created.")
-	flag.IntVar(&streamCreateDeleteFrequency, "streamperiod", 10, "The period that we create and delete stream.")
+	flag.IntVar(&streamCreateDeleteFrequency, "streamperiod", 30, "The period that we create and delete stream.")
 
 	//Scale RC
 	flag.BoolVar(&enableRCScaling, "enablescale", false, "This will scale rc in and out.")
@@ -61,11 +61,11 @@ func main() {
 	errChal := make(chan error)
 
 	if enableTrace == true {
-		go traceMA(errChal, stop)
+		go TraceMA(errChal, stop)
 	}
 
 	if enableStreamCreation == true {
-		go createAndDeleteStream(errChal)
+		go CreateAndDeleteStream(errChal)
 	}
 
 	if enableRCScaling == true {
@@ -84,7 +84,7 @@ func main() {
 }
 
 
-func traceMA(errChl chan error, stop chan error){
+func TraceMA(errChl chan error, stop chan error){
 
 	//end point full path
 	maEndpointFullPath := apiserver + endpointuri + MA_ENDPOINT_NAME
@@ -104,7 +104,7 @@ func traceMA(errChl chan error, stop chan error){
 	}
 }
 
-func createAndDeleteStream(errChl chan error) {
+func CreateAndDeleteStream(errChl chan error) {
 
 	//end point full path
 	nsaEndpointFullPath := apiserver + endpointuri + NSA_ENDPOINT_NAME
@@ -141,15 +141,22 @@ func goCreateAndDeleteStream(nsaEndpointFullPath string){
 		//fmt.Printf("maStatusRestCall: %s \n",maStatusRestCall)
 
 		//2. Create streams
-		stream.Create(nsaRestCall, numOfStream)
+		streams, err := stream.Create(nsaRestCall, numOfStream)
+		if err != nil {
+			fmt.Printf("Create stream failed: %v \n", err.Error())
+		}
+		//Sleep for a while, wait for the creation done.
+		time.Sleep(20 * time.Second)
 
-		//3. Sleep for a while
-		time.Sleep(time.Duration(streamCreateDeleteFrequency) * time.Second)
-
-		//4. Delete all streams
-		stream.DeleteAll(nsaRestCall)
+		//3. Delete all streams
+		//stream.DeleteAll(nsaRestCall)
+		err = stream.Delete(nsaRestCall, streams)
+		if err != nil {
+			fmt.Printf("Delete stream failed: %v \n", err.Error())
+		}
+		//Sleep for a while, wait for the deletion done.
+		time.Sleep(10 * time.Second)
 	}
-
 }
 
 func collectLogs() {
@@ -302,7 +309,6 @@ func printResult(result map[string]string) {
 	}
 	//Print the result
 	fmt.Printf("\n |------- %v ------|  \n", time.Now())
-	//fmt.Printf(" ================ %v ===============  \n", time.Now())
 	fmt.Print(string(b))
 	fmt.Printf("\n |------------------------------------------------------|  \n")
 

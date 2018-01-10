@@ -15,7 +15,7 @@ const (
 	low =  100000000000000000
 )
 
-func Create(nsa string, num int){
+func Create(nsa string, num int) ([]api.StreamCfg, error) {
 
 	//fmt.Printf("Start Creating \n")
 	//defer fmt.Printf("Finish Creating \n")
@@ -35,13 +35,33 @@ func Create(nsa string, num int){
 		Post(fullPath)
 	if err != nil {
 		fmt.Printf("Create Stream failed! %v \n", err.Error())
-		return
+		return nil, err
 	}
 
-	fmt.Printf("Created %v streams. resp status code: %v \n", num, resp.StatusCode())
+	fmt.Printf(">>>> Created %v streams. Status code: %v \n", num, resp.StatusCode())
+
+	return streams, nil
+
+	}
+
+func Delete(nsa string, streams []api.StreamCfg) error {
+
+	fullPath := nsa + "/configuration"
+	for i, _ := range streams{
+		url := fmt.Sprintf("%v/%v", fullPath, streams[i].StreamID)
+		delResp, err :=  rest.R().
+			SetHeader("Content-Type", "application/json").
+			Delete(url)
+		if err != nil {
+			fmt.Printf(">>>> Delete Stream failed! %v \n", err.Error())
+			return err
+		}
+		fmt.Printf(">>>> Deleted stream %v. Status code: %v \n",streams[i].StreamID, delResp.StatusCode())
+	}
+	return nil
 }
 
-func DeleteAll(nsa string){
+func DeleteAll(nsa string) error{
 
 	fullPath := nsa + "/configuration"
 	resp, err :=  rest.R().
@@ -49,13 +69,11 @@ func DeleteAll(nsa string){
 		Get(fullPath)
 	if err != nil {
 		fmt.Printf("Get Stream failed! %v \n", err.Error())
-		return
+		return err
 	}
 
-	fmt.Printf("resp: %v \n", resp)
 	streams := make([]api.StreamCfg,0)
 	json.Unmarshal(resp.Body(), &streams)
-	//fmt.Printf("%#v", len(streams))
 
 	for i, _ := range streams{
 		url := fmt.Sprintf("%v/%v", fullPath, streams[i].StreamID)
@@ -63,11 +81,12 @@ func DeleteAll(nsa string){
 			SetHeader("Content-Type", "application/json").
 			Delete(url)
 		if err != nil {
-			fmt.Printf("Delete Stream failed! %v \n", err.Error())
-			return
+			fmt.Printf(">>>> Delete Stream failed! %v \n", err.Error())
+			return err
 		}
-		fmt.Printf("del stream status code: %v \n", delResp.StatusCode())
+		fmt.Printf(">>>> del all streams. Status code: %v \n", delResp.StatusCode())
 	}
+	return nil
 }
 
 func Get() {
@@ -78,23 +97,24 @@ func generateStream() api.StreamCfg {
 
 	num := low + rand.Intn(high - low)
 	transports := [1]api.TransportCfg{{
-		URL: "http://ccr.linear-nat-dash.xcr.comcast.net/dash/USA_SD_NAT_4183_0_7503892744946620183/USA_SD_NAT_4183_0_7503892744946620163_DASH.mpd",
+		URL: "http://172.22.111.238/starzkids_pillar02/manifest.mpd",
+		//URL: "http://ccr.linear-nat-dash.xcr.comcast.net/dash/USA_SD_NAT_4183_0_7503892744946620183/USA_SD_NAT_4183_0_7503892744946620163_DASH.mpd",
 		AvgBitrate:1.875,
 		MaxBitrate:1.875,
 	}}
 
 	ac := api.ArchiveCfg{
-		ArchiveTime: 72,
-		ReArchiveTime: 24,
+		ArchiveTime: 30,
+		ReArchiveTime: 30,
 		ArchivalStartTime: "05:00PM",
-		ArchivalDuration: 10,
-		ArchivalPause: 5,
+		ArchivalDuration: 86400,
+		ArchivalPause: 5000,
 	}
 
 	stream := api.StreamCfg{
 		StreamName: fmt.Sprintf("USA_SD_NAT_4184_%v", num),
 		StreamID: fmt.Sprintf("%v", num),
-		Expiry: "2018-02-04T20:00:00Z",
+		Expiry: "2018-06-04T20:00:00Z",
 		Transports: transports,
 		ArchiveConfig:ac,
 	}
