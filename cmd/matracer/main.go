@@ -159,7 +159,7 @@ func collectLogs() {
 	fmt.Printf("%v",">>>> Start to collect log. \n")
 	defer fmt.Printf("%v",">>>> Finish collecting log. \n")
 	return
-	}
+}
 
 func goTraceMA(endpointFullPath string, stop chan error, errChl chan error) {
 
@@ -291,7 +291,7 @@ func createFile() {
 		if err != nil {
 			fmt.Println("err : %v \n", err)
 			return
-			}
+		}
 		defer file.Close()
 		fmt.Println("==> done creating file \n", path)
 	}
