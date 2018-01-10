@@ -10,6 +10,8 @@ import (
 
 	rest "gopkg.in/resty.v1"
 	"os"
+	"syscall"
+	"os/signal"
 )
 
 var (
@@ -57,34 +59,45 @@ func main() {
 
 	flag.Parse()
 
+	var gracefulStop = make(chan os.Signal)
+	signal.Notify(gracefulStop, syscall.SIGTERM)
+	signal.Notify(gracefulStop, syscall.SIGINT)
+	signal.Notify(gracefulStop, syscall.SIGSYS)
+	signal.Notify(gracefulStop, syscall.SIGKILL)
+
 	stop := make(chan error)
 	errChal := make(chan error)
 
 	if enableTrace == true {
-		go TraceMA(errChal, stop)
+		go TraceMA(errChal, gracefulStop)
 	}
 
 	if enableStreamCreation == true {
-		go CreateAndDeleteStream(errChal)
+		go CreateAndDeleteStream(errChal, gracefulStop)
 	}
 
 	if enableRCScaling == true {
-		go scaleRC(errChal)
+		go scaleRC(errChal, gracefulStop)
 	}
+
 
 	//Block
 	for {
 		select{
 		case err := <-stop:
-			fmt.Printf("%v", ">>>> This should not be reached. \n")
-			fmt.Printf("Stopping the program. Error: %v", err.Error())
+			fmt.Printf(">>>> Stopping the program. Error: %v \n", err.Error())
 			return
+		case sig := <-gracefulStop:
+			fmt.Printf("%v", ">>>> Get a signal to stop the application. \n")
+			fmt.Printf(">>>> Stopping the program: %v \n", sig)
+			time.Sleep(2 * time.Second)
+			os.Exit(0)
 		}
 	}
 }
 
 
-func TraceMA(errChl chan error, stop chan error){
+func TraceMA(errChl chan error, stop chan os.Signal){
 
 	//end point full path
 	maEndpointFullPath := apiserver + endpointuri + MA_ENDPOINT_NAME
@@ -95,16 +108,16 @@ func TraceMA(errChl chan error, stop chan error){
 	for {
 		select {
 		case <-ticker.C:
-			goTraceMA(maEndpointFullPath, stop, errChl)
-		case err := <-stop:
+			goTraceMA(maEndpointFullPath, errChl)
+		case <-stop:
 			ticker.Stop()
-			fmt.Printf("Error: %v", err.Error())
+			fmt.Printf("%v", "Stopping MA Tracer! \n")
 			return
 		}
 	}
 }
 
-func CreateAndDeleteStream(errChl chan error) {
+func CreateAndDeleteStream(errChl chan error, stop chan os.Signal) {
 
 	//end point full path
 	nsaEndpointFullPath := apiserver + endpointuri + NSA_ENDPOINT_NAME
@@ -120,6 +133,8 @@ func CreateAndDeleteStream(errChl chan error) {
 			fmt.Printf(">>>> Got an error from MA: %v \n", err.Error())
 
 			//collectLogs()
+			break
+		case <- stop:
 			break
 		}
 	}
@@ -165,7 +180,7 @@ func collectLogs() {
 	return
 }
 
-func goTraceMA(endpointFullPath string, stop chan error, errChl chan error) {
+func goTraceMA(endpointFullPath string, errChl chan error) {
 
 	endpointsMap, port := getEndpoints(endpointFullPath)
 
@@ -316,7 +331,7 @@ func printResult(result map[string]string) {
 
 
 
-func scaleRC(errChl chan error) {
+func scaleRC(errChl chan error, stop chan os.Signal) {
 	fmt.Printf("Coming Soon! \n")
 }
 
