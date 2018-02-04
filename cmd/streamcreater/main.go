@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 	"matracer/pkg/api"
+	stream "matracer/pkg/streamcreater"
 	rest "gopkg.in/resty.v1"
 	"math/rand"
-	//"encoding/json"
 	"encoding/json"
 )
 
@@ -30,13 +30,15 @@ var (
 	nsa    string
 	num 	int
 	action string
+	apiserver    string
 )
 
 func main() {
 
-	/* Handling flags */
+	/* Handling flags *///flags
+	flag.StringVar(&apiserver, "apiserver", "http://127.0.0.1:8080", "url for k8s api server, e.g., http://127.0.0.1:8080")
 	flag.StringVar(&nsa, "nsa", "http://10.10.224.29:9013", "url for nsa server, e.g., http://10.10.224.29:9013")
-	flag.IntVar(&num, "num", 5, "watch frequency")
+	flag.IntVar(&num, "num", 5, "Number of streams to be created")
 	flag.StringVar(&action, "action", "create", "support create/deleteall")
 	flag.Parse()
 

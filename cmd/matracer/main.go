@@ -20,16 +20,16 @@ var (
 	action string
 
 	//MA Trace
-	enableTrace bool
-	maTraceFrequency int
+	maTraceEnable   bool
+	maTraceInterval int
 
 	//Create and delete stream
-	enableStreamCreation bool
-	streamCreateDeleteFrequency int
-	numOfStream int
+	streamAddDelEnable   bool
+	streamAddDelInterval int
+	streamAddNum         int
 
 	//Scale RC
-	enableRCScaling bool
+	scaleEnable bool
 )
 
 const (
@@ -43,19 +43,19 @@ func main() {
 	//flags
 	flag.StringVar(&apiserver, "apiserver", "http://127.0.0.1:8080", "url for k8s api server, e.g., http://127.0.0.1:8080")
 	//flag.StringVar(&endpointName, "endpointname", "manifest-agent", "endpoint name, e.g, manifest-agent")
-	flag.StringVar(&action, "type", "traceonly", "support create/deleteall")
+	//flag.StringVar(&action, "type", "traceonly", "support create/deleteall")
 
 	//Trace
-	flag.BoolVar(&enableTrace, "enabletrace", true, "This will keep tracing MA status.")
-	flag.IntVar(&maTraceFrequency, "matracefrequency", 5, "watch frequency")
+	flag.BoolVar(&maTraceEnable, "ma_trace_enable", false, "This will keep tracing MA status.")
+	flag.IntVar(&maTraceInterval, "ma_trace_interval", 5, "watch interval")
 
 	//Create and delete stream
-	flag.BoolVar(&enableStreamCreation, "enablestream", false, "Enable create and delete stream.")
-	flag.IntVar(&numOfStream, "numofstream", 2, "The number of stream that will be created.")
-	flag.IntVar(&streamCreateDeleteFrequency, "streamperiod", 60, "The period that we create and delete stream.")
+	flag.BoolVar(&streamAddDelEnable, "stream_add_del_enable", false, "Enable create and delete stream.")
+	flag.IntVar(&streamAddNum, "stream_add_num", 2, "The number of stream that will be created.")
+	flag.IntVar(&streamAddDelInterval, "stream_add_interval", 60, "The interval that we create and delete stream.")
 
 	//Scale RC
-	flag.BoolVar(&enableRCScaling, "enablescale", false, "This will scale rc in and out.")
+	flag.BoolVar(&scaleEnable, "scale_enable", false, "This will scale rc in and out.")
 
 	flag.Parse()
 
@@ -72,15 +72,15 @@ func main() {
 	//For example, when we observe that two MA hold the same stream, we should notify streamCreater to stop creating stream.
 	errChal := make(chan error)
 
-	if enableTrace == true {
+	if maTraceEnable == true {
 		go TraceMA(errChal, gracefulStop)
 	}
 
-	if enableStreamCreation == true {
+	if streamAddDelEnable == true {
 		go CreateAndDeleteStream(errChal, gracefulStop)
 	}
 
-	if enableRCScaling == true {
+	if scaleEnable == true {
 		go scaleRC(errChal, gracefulStop)
 	}
 
@@ -100,13 +100,12 @@ func main() {
 	}
 }
 
-
 func TraceMA(errChl chan error, gracefulStop chan os.Signal){
 
 	//end point full path
 	maEndpointFullPath := apiserver + endpointuri + MA_ENDPOINT_NAME
 	// ticker
-	ticker := time.NewTicker(time.Duration(maTraceFrequency) * time.Second)
+	ticker := time.NewTicker(time.Duration(maTraceInterval) * time.Second)
 	//quit := make(chan struct{})
 
 	for {
@@ -126,7 +125,7 @@ func CreateAndDeleteStream(errChl chan error, gracefulStop chan os.Signal) {
 	//end point full path
 	nsaEndpointFullPath := apiserver + endpointuri + NSA_ENDPOINT_NAME
 	//ticker
-	ticker := time.NewTicker(time.Duration(streamCreateDeleteFrequency) * time.Second)
+	ticker := time.NewTicker(time.Duration(streamAddDelInterval) * time.Second)
 
 	for {
 		select {
@@ -160,7 +159,7 @@ func goCreateAndDeleteStream(nsaEndpointFullPath string){
 		//fmt.Printf("maStatusRestCall: %s \n",maStatusRestCall)
 
 		//2. Create streams
-		streams, err := stream.Create(nsaRestCall, numOfStream)
+		streams, err := stream.Create(nsaRestCall, streamAddNum)
 		if err != nil {
 			fmt.Printf("Create stream failed: %v \n", err.Error())
 		}

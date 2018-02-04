@@ -17,9 +17,6 @@ const (
 
 func Create(nsa string, num int) ([]api.StreamCfg, error) {
 
-	//fmt.Printf("Start Creating \n")
-	//defer fmt.Printf("Finish Creating \n")
-
 	/* endpoint full url */
 	fullPath := nsa + "/addstreams"
 
@@ -39,7 +36,6 @@ func Create(nsa string, num int) ([]api.StreamCfg, error) {
 	}
 
 	fmt.Printf(">>>> Created %v streams. Status code: %v \n", num, resp.StatusCode())
-
 	return streams, nil
 
 	}
