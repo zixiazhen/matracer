@@ -45,9 +45,7 @@ func main() {
 
 	flag.Parse()
 
-	//maEndpointFullPath := apiserver + endpointuri + MA_ENDPOINT_NAME
-
-	//form a list of zk endpoints
+/*	//form a list of zk endpoints
 	var zkEndpointNamess []string
 	for i := 1; i <= ZK_INSTANCE_NUM; i++ {
 		zkEndpointNamess = append(zkEndpointNamess, fmt.Sprintf("%s%s%s-0%v", apiserver, endpointuri, MA_ENDPOINT_NAME, i))
@@ -57,7 +55,7 @@ func main() {
 	for _, zkEndpointName := range zkEndpointNamess {
 		zkServer, _ := getZKFirstEndpoints(zkEndpointName)
 		zkServers = append(zkServers, zkServer)
-	}
+	}*/
 
 	//This is used for app internal stop signal.
 	stop := make(chan error)
@@ -105,6 +103,20 @@ type ZKStatDetails struct {
 	err  error
 }
 
+func RefreshServerInfo() {
+	//form a list of zk endpoints
+	var zkEndpointNamess []string
+	for i := 1; i <= ZK_INSTANCE_NUM; i++ {
+		zkEndpointNamess = append(zkEndpointNamess, fmt.Sprintf("%s%s%s-0%v", apiserver, endpointuri, MA_ENDPOINT_NAME, i))
+	}
+	//fmt.Printf("zkEndpointNamess: %v \n", zkEndpointNamess)
+
+	for _, zkEndpointName := range zkEndpointNamess {
+		zkServer, _ := getZKFirstEndpoints(zkEndpointName)
+		zkServers = append(zkServers, zkServer)
+	}
+}
+
 func TraceZK(errChl chan error, gracefulStop chan os.Signal, eventChl chan Event) {
 
 	// ticker
@@ -112,6 +124,7 @@ func TraceZK(errChl chan error, gracefulStop chan os.Signal, eventChl chan Event
 	for {
 		select {
 		case <-ticker.C:
+			RefreshServerInfo()
 			goGetZKStat(errChl, eventChl)
 		case <-gracefulStop:
 			ticker.Stop()
