@@ -1,18 +1,18 @@
 package main
 
 import (
-	"github.com/samuel/go-zookeeper/zk"
 	"encoding/json"
 	"flag"
+	"github.com/samuel/go-zookeeper/zk"
 	"matracer/pkg/api"
 	"time"
 
-	rest "gopkg.in/resty.v1"
-	//"os"
-	//"syscall"
-	//"os/signal"
 	"fmt"
+	"github.com/olekukonko/tablewriter"
+	rest "gopkg.in/resty.v1"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 const (
@@ -29,7 +29,7 @@ var (
 	//ZK Trace
 	traceInterval int
 	zkNodeName    string
-	zkConns       []*zk.Conn
+	zkConns       map[string]*zk.Conn //zk-IP: Conn
 )
 
 func main() {
@@ -39,8 +39,8 @@ func main() {
 	flag.StringVar(&endpointName, "endpointname", "zookeeper", "endpoint name, e.g, zookeeper")
 
 	//Trace
-	flag.IntVar(&traceInterval, "ma_trace_interval", 5, "watch interval")
-	flag.StringVar(&zkNodeName, "zknodename", "/", "zknodename, e.g, /ActiveStream")
+	flag.IntVar(&traceInterval, "interval", 5, "watch interval")
+	flag.StringVar(&zkNodeName, "nodename", "/", "zknodename, e.g, /ActiveStream")
 
 	flag.Parse()
 
@@ -62,14 +62,21 @@ func main() {
 	//This is used for app internal stop signal.
 	stop := make(chan error)
 	errChal := make(chan error)
+	eventChl := make(chan Event)
 	gracefulStop := make(chan os.Signal)
+	signal.Notify(gracefulStop, syscall.SIGTERM)
+	signal.Notify(gracefulStop, syscall.SIGINT)
+	signal.Notify(gracefulStop, syscall.SIGSYS)
+	signal.Notify(gracefulStop, syscall.SIGKILL)
 
 	//Init zookeeper connections
-	zkConns := initZKConn(zkServers)
-	fmt.Printf("zkConns: %v \n", zkConns)
+	zkConns = initZKConn(zkServers)
+
+	//print result
+	go printEvent(eventChl)
 
 	//Start trace zk node
-	go TraceZK(errChal, gracefulStop)
+	go TraceZK(errChal, gracefulStop, eventChl)
 
 	//Block
 	for {
@@ -84,84 +91,126 @@ func main() {
 			os.Exit(0)
 		}
 	}
-
-	/*
-		//ZK
-		c, _, err := zk.Connect([]string{"192.168.3.130"}, time.Second) //*10)
-		if err != nil {
-			fmt.Printf("Error connecting to zk: %+v", err)
-			//panic(err)
-		}
-
-		_, _, ch, err := c.ChildrenW("/ActiveStreams")
-		if err != nil {
-			fmt.Printf("== err: %+v \n", err)
-		}
-
-		fmt.Printf("==== Start Watching ZK ====! \n")
-		for {
-			select {
-			case event := <-ch:
-				fmt.Printf("==== [%v] - event: %+v \n", time.Now(), event)
-			}
-		}*/
-}
-
-func initZKConn(zkServers []string) []*zk.Conn {
-	var conns []*zk.Conn
-	for i := range zkServers {
-		c, _, err := zk.Connect([]string{zkServers[i]}, time.Second)
-		if err != nil {
-			fmt.Printf("Error connecting to zk: %+v", err)
-		} else {
-			conns = append(conns, c)
-		}
-	}
-	return conns
 }
 
 type Event struct {
+	zkStat []*ZKEvent
+}
+
+type ZKEvent struct {
+	zkIP string
 	stat *zk.Stat
 	data []byte
 	err  error
 }
 
-func TraceZK(errChl chan error, gracefulStop chan os.Signal) {
+func TraceZK(errChl chan error, gracefulStop chan os.Signal, eventChl chan Event) {
 
 	// ticker
 	ticker := time.NewTicker(time.Duration(traceInterval) * time.Second)
-	//quit := make(chan struct{})
-	var events chan Event
 	for {
 		select {
-		case e := <-events:
-			printEvent(e)
 		case <-ticker.C:
-			goGetZKStat(errChl, events)
+			goGetZKStat(errChl, eventChl)
 		case <-gracefulStop:
 			ticker.Stop()
-			fmt.Printf("%v", "Stopping MA Tracer! \n")
 			return
 		}
 	}
 }
 
-func printEvent(event Event) {
-	fmt.Printf("evnet: %v \n", event)
+func printEvent(eventChl chan Event) {
+	for {
+		select {
+		case e := <-eventChl:
+			printStats(e.zkStat)
+		}
+	}
+	fmt.Printf(" %v \n", "Stop printing")
 }
 
-func goGetZKStat(errChl chan error, events chan Event) {
-	var event Event
-	for i := range zkConns {
-		data, stat, err := zkConns[i].Get(zkNodeName)
-		if err != nil{
-			fmt.Printf("zookeeper connection error,ZK State: %v \n", zkConns[i].State())
+func printStats(zkStat []*ZKEvent) {
+	
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"ZK IP", "Czxid", "Mzxid", "Ctime", "Mtime", "Version", "Cversion", "Aversion", "EphemeralOwner", "DataLength", "NumChildren", "Pzxid"})
+	
+	//var data [][]string
+	for i := range zkStat {
+		stat := zkStat[i]
+		//fmt.Printf("stat: %v \n" , stat)
+
+		var row []string
+		if stat == nil || stat.stat == nil{
+			/*
+			row = append(row,
+				zkStat[i].zkIP,
+				"-",
+				"-",
+				"-",
+				"-",
+				"-",
+				"-",
+				"-",
+				"-",
+				"-",
+				"-",
+			)
+			table.Append(row)
+			*/
 			continue
 		}
-		event.data = data
-		event.stat = stat
+
+		//fmt.Printf("stat.stat: %v \n" , stat.stat)
+
+		row = append(row,
+			stat.zkIP,
+			fmt.Sprintf("%v", stat.stat.Czxid),
+			fmt.Sprintf("%v", stat.stat.Mzxid),
+			fmt.Sprintf("%v", stat.stat.Ctime),
+			fmt.Sprintf("%v", stat.stat.Mtime),
+			fmt.Sprintf("%v", stat.stat.Version),
+			fmt.Sprintf("%v", stat.stat.Cversion),
+			fmt.Sprintf("%v", stat.stat.Aversion),
+			fmt.Sprintf("%v", stat.stat.EphemeralOwner),
+			fmt.Sprintf("%v", stat.stat.DataLength),
+			fmt.Sprintf("%v", stat.stat.NumChildren),
+			fmt.Sprintf("%v", stat.stat.Pzxid),
+		)
+		//data = append(data, row)
+		table.Append(row)
 	}
-	events <- event
+	fmt.Printf("  %v \n" , time.Now())
+	table.Render()
+}
+
+func goGetZKStat(errChl chan error, eventChl chan Event) {
+	var zkStats []*ZKEvent
+	for ip, _ := range zkConns {
+		var zkStat ZKEvent
+		c := zkConns[ip]
+		if c == nil {
+			fmt.Printf("%v: Cannot connect to ZK.  \n", ip)
+			zkStat.zkIP = ip
+			zkStat.err = fmt.Errorf("%v", "Cannot connect to ZK!")
+			zkStats = append(zkStats, &zkStat)
+			continue
+		}
+
+		data, stat, err := c.Get(zkNodeName)
+		if err != nil {
+			fmt.Printf("%v: Get ZK znode failed: %v \n", ip,  err.Error())
+			continue
+		}
+		zkStat.zkIP = ip
+		zkStat.data = data
+		zkStat.stat = stat
+		zkStat.err = nil
+		zkStats = append(zkStats, &zkStat)
+	}
+	event := Event{
+		zkStat: zkStats,
+	}
+	eventChl <- event
 }
 
 //get the endpoint for 2181 port, which is the first endpoint from the list
@@ -196,4 +245,22 @@ func getZKFirstEndpoints(endpointFullPath string) (string, int32) {
 	fmt.Printf("addr: %v | port: %v \n", endpointAddrList[0].IP, port)
 
 	return endpointAddrList[0].IP, port
+}
+
+func initZKConn(zkServers []string) map[string]*zk.Conn {
+	//var conns []*zk.Conn
+	m := make(map[string]*zk.Conn)
+	for i := range zkServers {
+		c, _, err := zk.Connect([]string{zkServers[i]}, time.Second)
+		if err != nil {
+			fmt.Printf("Error connecting to zk: %+v", err)
+			if len(zkServers[i]) == 0 {
+				continue
+			}
+			m[zkServers[i]] = nil
+		} else {
+			m[zkServers[i]] = c
+		}
+	}
+	return m
 }
