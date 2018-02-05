@@ -30,6 +30,7 @@ var (
 	traceInterval int
 	zkNodeName    string
 	zkConns       map[string]*zk.Conn //zk-IP: Conn
+	zkServers     []string
 )
 
 func main() {
@@ -53,7 +54,6 @@ func main() {
 	}
 	//fmt.Printf("zkEndpointNamess: %v \n", zkEndpointNamess)
 
-	var zkServers []string
 	for _, zkEndpointName := range zkEndpointNamess {
 		zkServer, _ := getZKFirstEndpoints(zkEndpointName)
 		zkServers = append(zkServers, zkServer)
@@ -94,10 +94,11 @@ func main() {
 }
 
 type Event struct {
-	zkStat []*ZKEvent
+	zkStat  []*ZKStatDetails
+	svrStat []*zk.ServerStats
 }
 
-type ZKEvent struct {
+type ZKStatDetails struct {
 	zkIP string
 	stat *zk.Stat
 	data []byte
@@ -123,24 +124,57 @@ func printEvent(eventChl chan Event) {
 	for {
 		select {
 		case e := <-eventChl:
-			printStats(e.zkStat)
+			printNodePathStats(e.zkStat)
+			printServerStates(e.svrStat)
 		}
 	}
 	fmt.Printf(" %v \n", "Stop printing")
 }
 
-func printStats(zkStat []*ZKEvent) {
-	
+func printServerStates(svrStat []*zk.ServerStats) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Sent", "Received", "NodeCount", "MinLatency", "AvgLatency", "MaxLatency", "Connections", "Outstanding", "Epoch", "Counter", "BuildTime", "Mode", "Version", "Error"})
+
+	for i := range svrStat {
+		svrStat := svrStat[i]
+		var row []string
+		if svrStat == nil {
+			continue
+		}
+		row = append(row,
+			fmt.Sprintf("%v", svrStat.Sent),
+			fmt.Sprintf("%v", svrStat.Received),
+			fmt.Sprintf("%v", svrStat.NodeCount),
+			fmt.Sprintf("%v", svrStat.MinLatency),
+			fmt.Sprintf("%v", svrStat.AvgLatency),
+			fmt.Sprintf("%v", svrStat.MaxLatency),
+			fmt.Sprintf("%v", svrStat.Connections),
+			fmt.Sprintf("%v", svrStat.Outstanding),
+			fmt.Sprintf("%v", svrStat.Epoch),
+			fmt.Sprintf("%v", svrStat.Counter),
+			fmt.Sprintf("%v", svrStat.BuildTime),
+			fmt.Sprintf("%v", svrStat.Mode),
+			fmt.Sprintf("%v", svrStat.Version),
+			fmt.Sprintf("%v", svrStat.Error.Error()),
+		)
+		//data = append(data, row)
+		table.Append(row)
+	}
+	table.Render()
+}
+
+func printNodePathStats(zkStat []*ZKStatDetails) {
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"ZK IP", "Czxid", "Mzxid", "Ctime", "Mtime", "Version", "Cversion", "Aversion", "EphemeralOwner", "DataLength", "NumChildren", "Pzxid"})
-	
-	//var data [][]string
+
+	//Print znode stat
 	for i := range zkStat {
 		stat := zkStat[i]
 		//fmt.Printf("stat: %v \n" , stat)
 
 		var row []string
-		if stat == nil || stat.stat == nil{
+		if stat == nil || stat.stat == nil {
 			/*
 			row = append(row,
 				zkStat[i].zkIP,
@@ -179,14 +213,15 @@ func printStats(zkStat []*ZKEvent) {
 		//data = append(data, row)
 		table.Append(row)
 	}
-	fmt.Printf("  %v \n" , time.Now())
+	fmt.Printf("  %v \n", time.Now())
 	table.Render()
 }
 
 func goGetZKStat(errChl chan error, eventChl chan Event) {
-	var zkStats []*ZKEvent
+	//get znode stat
+	var zkStats []*ZKStatDetails
 	for ip, _ := range zkConns {
-		var zkStat ZKEvent
+		var zkStat ZKStatDetails
 		c := zkConns[ip]
 		if c == nil {
 			fmt.Printf("%v: Cannot connect to ZK.  \n", ip)
@@ -198,7 +233,7 @@ func goGetZKStat(errChl chan error, eventChl chan Event) {
 
 		data, stat, err := c.Get(zkNodeName)
 		if err != nil {
-			fmt.Printf("%v: Get ZK znode failed: %v \n", ip,  err.Error())
+			fmt.Printf("%v: Get ZK znode failed: %v \n", ip, err.Error())
 			continue
 		}
 		zkStat.zkIP = ip
@@ -207,8 +242,17 @@ func goGetZKStat(errChl chan error, eventChl chan Event) {
 		zkStat.err = nil
 		zkStats = append(zkStats, &zkStat)
 	}
+
+	//get server state
+	svrStates, imOK := zk.FLWSrvr(zkServers, 5*time.Second)
+	if imOK == false {
+		fmt.Printf("ZK server status is innormal! \n")
+	}
+
+	//
 	event := Event{
-		zkStat: zkStats,
+		zkStat:  zkStats,
+		svrStat: svrStates,
 	}
 	eventChl <- event
 }
