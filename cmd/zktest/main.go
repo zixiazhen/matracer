@@ -25,7 +25,21 @@ func main() {
 		//panic(err)
 	}
 
+	state := c.State()
+	fmt.Printf("state: %+v", state)
 
+
+	createNode := zk.CreateRequest{Path: "/ActiveStreams/s01/DONE", Data: []byte{1, 2, 3, 4}, Acl: zk.WorldACL(zk.PermAll)}
+	createNode2 := zk.CreateRequest{Path: "/ActiveStreams/s01/node01", Data: []byte{1, 2, 3, 4}, Acl: zk.WorldACL(zk.PermAll)}
+	deleteNode := zk.DeleteRequest{Path: "/ActiveStreams/s01/DONE"}
+	deleteWorkerRqsts := []interface{}{&createNode, &createNode2, &deleteNode}
+	_, err = c.Multi(deleteWorkerRqsts...)
+	if err != nil {
+		fmt.Printf("====  delete error! %+v \n", err)
+	}
+
+
+	/*
 	data, stat, err := c.Get("/")
 	if  err != nil {
 		fmt.Printf("Get returned error: %+v", err)
@@ -33,12 +47,21 @@ func main() {
 
 	fmt.Printf("data: %+v \n", data)
 	fmt.Printf("stat: %+v \n", stat)
-
-	c.Sync()
-
+	*/
 
 
-
+/*	exists, stat, chl, err := c.ExistsW("/test/1")
+	if !exists {
+		fmt.Printf("%+v", "node is not there!! chl: %+v", chl)
+		//return
+	}
+	for {
+		select{
+		case event := <- chl:
+			fmt.Printf("event: %+v \n", event)
+			time.Sleep(2 * time.Second)
+		}
+	}*/
 
 
 
