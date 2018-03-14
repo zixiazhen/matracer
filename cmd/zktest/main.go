@@ -5,6 +5,9 @@ import (
 	"time"
 	"github.com/samuel/go-zookeeper/zk"
 	"fmt"
+	"sync"
+	//"reflect"
+	//"sort"
 )
 
 func main() {
@@ -14,12 +17,72 @@ func main() {
 	)
 
 	/* Handling flags */
-	flag.StringVar(&server, "server", "http://192.168.3.130:2181", "url for zk  server, e.g., http://192.168.3.130:2181")
+	flag.StringVar(&server, "server", "http://0.0.0.0:2181", "url for zk  server, e.g., http://192.168.3.130:2181")
 	//flag.IntVar(&frequency, "frequency", 5, "watch frequency")
 	flag.Parse()
 
+
 	//ZK
-	c, _, err := zk.Connect([]string{"192.168.3.130:2181"}, time.Second) //*10)
+	c, _, err := zk.Connect([]string{"0.0.0.0:2181"}, 5 * time.Second)
+	if err != nil {
+		fmt.Printf("Error connecting to zk: %+v", err)
+	}
+
+	state := c.State()
+	fmt.Printf("state: %+v \n", state)
+
+	createNode := zk.CreateRequest{
+		Path: "/aaa",
+		Data: []byte{1, 2, 3, 4},
+		Acl: zk.WorldACL(zk.PermAll),
+		Flags: 0,
+		}
+	deleteWorkerRqsts := []interface{}{&createNode}
+	rep, err := c.Multi(deleteWorkerRqsts...)
+	if err != nil {
+		fmt.Printf("====  rep! %+v \n", rep)
+	}
+	//createNode2 := zk.CreateRequest{Path: "/ActiveStreams/s01/node01", Data: []byte{1, 2, 3, 4}, Acl: zk.WorldACL(zk.PermAll)}
+	//deleteNode := zk.DeleteRequest{Path: "/ActiveStreams/s01/DONE"}
+	//deleteWorkerRqsts := []interface{}{&createNode, &createNode2, &deleteNode}
+	//_, err = c.Multi(deleteWorkerRqsts...)
+	//if err != nil {
+	//	fmt.Printf("====  delete error! %+v \n", err)
+	//}
+
+/*	path0 := "/bbb"
+	path, err := c.Create(
+		path0,
+		[]byte{1, 2, 3, 4},
+		0,
+		zk.WorldACL(zk.PermAll));
+	if err != nil {
+		fmt.Printf("2 Error : %+v \n", err)
+		//panic(err)
+	}
+	fmt.Printf("== 2 path: %+v \n", path)*/
+
+
+	children, stat, eventChl, err := c.ChildrenW("/aaa")
+	fmt.Printf("==== children: %+v \n", children)
+	fmt.Printf("==== stat: %+v \n", stat)
+	fmt.Printf("==== err: %+v \n", err)
+	for {
+		select{
+		case event := <-eventChl:
+			fmt.Printf("==== watch event: %+v \n", event)
+
+		}
+	}
+
+	//a := []string{"le_0000000000", "le_0000000001", "le_0000000002"}
+	//b := []string{"le_0000000000", "le_0000000002", "le_0000000001"}
+	//fmt.Println(reflect.DeepEqual(a, b))
+
+
+	/*
+	//ZK
+	c, _, err := zk.Connect([]string{"192.168.3.130:2181"}, 5 * time.Second) //*10)
 	if err != nil {
 		fmt.Printf("Error connecting to zk: %+v", err)
 		//panic(err)
@@ -37,6 +100,93 @@ func main() {
 	if err != nil {
 		fmt.Printf("====  delete error! %+v \n", err)
 	}
+
+	*/
+
+	//ZK TEST time out
+	/*		start := time.Now()
+
+			/////////// 1
+			c, _, err := zk.Connect([]string{"10.0.0.1:2185"}, 10 * time.Second) //*10)
+			if err != nil {
+				fmt.Printf("1 Error connecting to zk: %+v \n", err)
+				//panic(err)
+			}
+			elapsed1 := time.Since(start)
+			fmt.Printf("== 1 elapsed1: %+v \n", elapsed1)
+
+
+				/////////// 2
+				path0 := "/aaaa"
+					path, err := c.Create(
+						path0,
+						[]byte{1, 2, 3, 4},
+						0,
+						zk.WorldACL(zk.PermAll));
+				if err != nil {
+					fmt.Printf("2 Error : %+v \n", err)
+					//panic(err)
+				}
+				elapsed2 := time.Since(start)
+				fmt.Printf("== 2 elapsed2: %+v \n", elapsed2)
+				fmt.Printf("== 2 path: %+v \n", path)
+
+
+
+				/////////// 3
+				children, _, err := c.Children(path0)
+				if err != nil {
+					fmt.Printf("3 GET Error :%s, ||  %+v \n", children, err)
+				}
+				elapsed3 := time.Since(start)
+				fmt.Printf("== 3 elapsed2: %+v \n", elapsed3)
+
+
+
+				//////////
+
+
+
+				///////////
+				ch := make(chan int)
+
+				go func(){
+					for {
+						select {
+						case aa := <- ch:
+							fmt.Printf("== aa: %+v \n", aa)
+						}
+					}
+
+				}()
+
+				fmt.Printf("== 4 ch: %+v \n", ch)
+				ch <- 1
+				close(ch)
+
+				//ch <- 2
+				fmt.Printf("== 5 ch: %+v \n", ch)
+				//value, ok := <- ch
+				//fmt.Printf("== ch: %+v || ok: %v ||value: %v \n", ch, ok, value)
+				close(ch)
+
+				select {
+				}*/
+
+	//ch := make(chan T)
+	//fmt.Println(IsClosed(ch)) // false
+	//close(ch)
+	//fmt.Println(IsClosed(ch)) // true
+
+	//
+	//ch2 := NewMyChannel()
+	//
+	//ch2.SafeClose()
+	////fmt.Println( <- ch2.C)
+	//
+	//ch2.SafeClose2()
+	////fmt.Println( <- ch2.C)
+
 
 
 	/*
@@ -180,3 +330,42 @@ func createStreams(c *zk.Conn) {
 
 }
 */
+type T int
+
+func IsClosed(ch chan T) bool {
+	select {
+	case some := <-ch:
+		fmt.Printf("some: |%+v| \n", some)
+		return true
+	default:
+	}
+
+	return false
+}
+
+type MyChannel struct {
+	C    chan T
+	C2    chan T
+	once sync.Once
+}
+
+func NewMyChannel() *MyChannel {
+	return &MyChannel{
+			C: make(chan T),
+			C2: make(chan T),
+		}
+}
+
+func (mc *MyChannel) SafeClose() {
+	mc.once.Do(func() {
+		fmt.Println("close  C1")
+		close(mc.C)
+	})
+}
+
+func (mc *MyChannel) SafeClose2() {
+	mc.once.Do(func() {
+		fmt.Println("close  C2")
+		close(mc.C2)
+	})
+}

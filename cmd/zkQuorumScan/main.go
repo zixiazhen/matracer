@@ -13,25 +13,30 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"strings"
 )
 
 const (
-	endpointuri      = "/api/v1/namespaces/default/endpoints/"
-	serviceuri       = "/api/v1/namespaces/default/services/"
-	ZK_INSTANCE_NUM  = 5
-	MA_ENDPOINT_NAME = "zookeeper"
-	ZK_PORT          = 2181
+	endpointuri       = "/api/v1/namespaces/default/endpoints/"
+	serviceuri        = "/api/v1/namespaces/default/services/"
+	ZK_INSTANCE_NUM   = 5
+	MA_ENDPOINT_NAME  = "zookeeper"
+	ZK_SERVICE_PREFIX = "zookeeper-"
+	ZK_PORT           = 2181
 )
 
 var (
 	apiserver    string
 	endpointName string
+	getZKIPFrom  string
 
 	//ZK Trace
 	traceInterval int
+	showZNodeStat bool
 	zkNodeName    string
 	zkConns       map[string]*zk.Conn //zk-IP: Conn
 	zkServers     []string
+
 )
 
 func main() {
@@ -39,6 +44,9 @@ func main() {
 	//flags
 	flag.StringVar(&apiserver, "apiserver", "http://192.168.3.130:8080", "url for k8s api server, e.g., http://127.0.0.1:8080")
 	flag.StringVar(&endpointName, "endpointname", "zookeeper", "endpoint name, e.g, zookeeper")
+	flag.StringVar(&getZKIPFrom, "getzkipfrom", "service", "Specify where we get zk ips, e.g, service, endpoint, iplist")
+
+	flag.BoolVar(&showZNodeStat, "traceznode", false, "Enable create and delete stream.")
 
 	//Trace
 	flag.IntVar(&traceInterval, "interval", 5, "watch interval")
@@ -68,13 +76,30 @@ func main() {
 	signal.Notify(gracefulStop, syscall.SIGSYS)
 	signal.Notify(gracefulStop, syscall.SIGKILL)
 
+	serviceList, err := getZKServices()
+	if err != nil {
+		fmt.Printf("Get service list failed: err: %s ", err.Error())
+	}
+
+	//init zkServers ip
+	if getZKIPFrom == "service" {
+		//GetZKServerIPFromK8SZKService()
+		GetZKServerIPFromK8SZKServiceNew(serviceList)
+	} else if getZKIPFrom == "endpoint" {
+		GetZKServerIPFromK8SZKEndpoint()
+	} else if getZKIPFrom == "iplist" {
+		//todo
+	} else {
+		zkServers = []string{"127.0.0.1:2181"}
+	}
+
 	//Init zookeeper connections
 	zkConns = initZKConn(zkServers)
 
 	//print result
 	go printEvent(eventChl)
 
-	//Start trace zk node
+	//Start tracing zk node
 	go TraceZK(errChal, gracefulStop, eventChl)
 
 	//Block
@@ -105,7 +130,7 @@ type ZKStatDetails struct {
 	children []string
 }
 
-func RefreshServerInfoFromEndpoints() {
+func GetZKServerIPFromK8SZKEndpoint() {
 	//form a list of zk endpoints
 	var zkEndpointNamess []string
 	for i := 1; i <= ZK_INSTANCE_NUM; i++ {
@@ -119,16 +144,27 @@ func RefreshServerInfoFromEndpoints() {
 	}
 }
 
-func RefreshServerInfoFromK8SService() {
+func GetZKServerIPFromK8SZKServiceNew(serviceList api.ServiceList) {
+	for _, service := range serviceList.Items {
+		if !strings.HasPrefix(service.ObjectMeta.Name, ZK_SERVICE_PREFIX) {
+			continue
+		}
+		zkServer := fmt.Sprintf("%s:%s", service.Spec.ClusterIP, ZK_PORT)
+		zkServers = append(zkServers, zkServer)
+	}
+	fmt.Printf("zkServers: %v \n", zkServers)
+}
+
+func GetZKServerIPFromK8SZKService() {
 	//form a list of zk service
 	var zkServiceNamess []string
 	for i := 1; i <= ZK_INSTANCE_NUM; i++ {
 		zkServiceNamess = append(zkServiceNamess, fmt.Sprintf("%s%s%s-0%v", apiserver, serviceuri, MA_ENDPOINT_NAME, i))
 	}
-	//fmt.Printf("zkEndpointNamess: %v \n", zkEndpointNamess)
+	fmt.Printf("zkServiceNamess: %v \n", zkServiceNamess)
 
 	for _, zkServicName := range zkServiceNamess {
-		zkServer, _ := getZKFirstEndpoints(zkServicName)
+		zkServer, _ := getZKServicesByFullpath(zkServicName)
 		zkServers = append(zkServers, zkServer)
 	}
 }
@@ -140,7 +176,7 @@ func TraceZK(errChl chan error, gracefulStop chan os.Signal, eventChl chan Event
 	for {
 		select {
 		case <-ticker.C:
-			RefreshServerInfoFromEndpoints()
+			//RefreshServerInfoFromEndpoints()
 			goGetZKStat(errChl, eventChl)
 		case <-gracefulStop:
 			ticker.Stop()
@@ -153,7 +189,9 @@ func printEvent(eventChl chan Event) {
 	for {
 		select {
 		case e := <-eventChl:
-			printNodePathStats(e.zkStat)
+			if showZNodeStat == true {
+				printNodePathStats(e.zkStat)
+			}
 			printServerStates(e.svrStat)
 		}
 	}
@@ -161,6 +199,10 @@ func printEvent(eventChl chan Event) {
 }
 
 func printServerStates(svrStat []*zk.ServerStats) {
+	if len(svrStat) == 0 {
+		return
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Sent", "Received", "NodeCount", "MinLatency", "AvgLatency", "MaxLatency", "Connections", "Outstanding", "Epoch", "Counter", "BuildTime", "Mode", "Version", "Error"})
 
@@ -186,13 +228,16 @@ func printServerStates(svrStat []*zk.ServerStats) {
 			fmt.Sprintf("%v", svrStat.Version),
 			fmt.Sprintf("%v", svrStat.Error.Error()),
 		)
-		//data = append(data, row)
 		table.Append(row)
 	}
 	table.Render()
 }
 
 func printNodePathStats(zkStat []*ZKStatDetails) {
+
+	if len(zkStat) == 0 {
+		return
+	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"ZK IP", "Czxid", "Mzxid", "Ctime", "Mtime", "Version", "Cversion", "Aversion", "EphemeralOwner", "DataLength", "NumChildren", "Pzxid", "Children"})
@@ -330,10 +375,10 @@ func getZKFirstEndpoints(endpointFullPath string) (string, int32) {
 }
 
 //get the endpoint for 2181 port, which is the first service from the list
-func getZKFirstServices(endpointFullPath string) (string, int32) {
+func getZKServicesByFullpath(serviceFullPath string) (string, int32) {
 
 	/* Do a simple get from k8s api server */
-	resp, err := rest.R().Get(endpointFullPath)
+	resp, err := rest.R().Get(serviceFullPath)
 	if err != nil {
 		fmt.Printf("Cannot access server: %v \n", err.Error())
 		return "", 0
@@ -341,26 +386,38 @@ func getZKFirstServices(endpointFullPath string) (string, int32) {
 
 	/* get a list of endpoints */
 	//fmt.Printf("%s",resp.Body())
-	var eps api.Endpoints
-	err = json.Unmarshal(resp.Body(), &eps)
+	var service api.Service
+	err = json.Unmarshal(resp.Body(), &service)
 	if err != nil {
 		fmt.Print("Unmarshal resp body failed! \n")
 		return "", 0
 	}
 
-	//var addresses []string
-	//need to verify if in all case, there is only one subset in endpoints
-	if eps.Subsets == nil || len(eps.Subsets) == 0 || len(eps.Subsets[0].Addresses) == 0 {
-		fmt.Printf("No endpoint information found!\n")
-		return "", 0
+	return service.Spec.ClusterIP, ZK_PORT
+}
+
+//get the endpoint for 2181 port, which is the first service from the list
+func getZKServices() (api.ServiceList, error) {
+
+	var serviceList api.ServiceList
+
+	serviceUrl := fmt.Sprintf("%s%s", apiserver, serviceuri)
+	fmt.Printf("serviceUrl: %+v \n", serviceUrl)
+
+	resp, err := rest.R().Get(serviceUrl)
+	if err != nil {
+		fmt.Printf("Cannot access server: %v \n", err.Error())
+		return serviceList, err
 	}
 
-	endpointAddrList := eps.Subsets[0].Addresses
-	port := eps.Subsets[0].Ports[0].Port
+	err = json.Unmarshal(resp.Body(), &serviceList)
+	if err != nil {
+		fmt.Print("Unmarshal resp body failed! \n")
+		return serviceList, err
+	}
+	fmt.Printf("serviceList: %+v \n", serviceList)
 
-	fmt.Printf("addr: %v | port: %v \n", endpointAddrList[0].IP, port)
-
-	return endpointAddrList[0].IP, port
+	return serviceList, nil
 }
 
 func initZKConn(zkServers []string) map[string]*zk.Conn {
