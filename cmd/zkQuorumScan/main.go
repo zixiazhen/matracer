@@ -28,7 +28,8 @@ const (
 var (
 	apiserver    string
 	endpointName string
-	getZKIPFrom  string
+	zkIPSource   string
+	zkServerList  string
 
 	//ZK Trace
 	traceInterval int
@@ -36,7 +37,6 @@ var (
 	zkNodeName    string
 	zkConns       map[string]*zk.Conn //zk-IP: Conn
 	zkServers     []string
-
 )
 
 func main() {
@@ -44,7 +44,8 @@ func main() {
 	//flags
 	flag.StringVar(&apiserver, "apiserver", "http://192.168.3.130:8080", "url for k8s api server, e.g., http://127.0.0.1:8080")
 	flag.StringVar(&endpointName, "endpointname", "zookeeper", "endpoint name, e.g, zookeeper")
-	flag.StringVar(&getZKIPFrom, "getzkipfrom", "service", "Specify where we get zk ips, e.g, service, endpoint, iplist")
+	flag.StringVar(&zkIPSource, "zkipsource", "service", "Specify where we get zk ips, e.g, service, endpoint")
+	flag.StringVar(&zkServerList, "zkserverlist", "127.0.0.1:2181", "zk ip")
 
 	flag.BoolVar(&showZNodeStat, "traceznode", false, "Enable create and delete stream.")
 
@@ -82,13 +83,13 @@ func main() {
 	}
 
 	//init zkServers ip
-	if getZKIPFrom == "service" {
+	if zkIPSource == "service" {
 		//GetZKServerIPFromK8SZKService()
 		GetZKServerIPFromK8SZKServiceNew(serviceList)
-	} else if getZKIPFrom == "endpoint" {
+	} else if zkIPSource == "endpoint" {
 		GetZKServerIPFromK8SZKEndpoint()
-	} else if getZKIPFrom == "iplist" {
-		//todo
+	} else if len(zkServers) > 0 {
+		GetZKServerIPFromArgs(zkServerList)
 	} else {
 		zkServers = []string{"127.0.0.1:2181"}
 	}
@@ -167,6 +168,11 @@ func GetZKServerIPFromK8SZKService() {
 		zkServer, _ := getZKServicesByFullpath(zkServicName)
 		zkServers = append(zkServers, zkServer)
 	}
+}
+
+// input should look like this "1.2.3.4:2181;2.3.4.5:2181"
+func GetZKServerIPFromArgs(zkServerList string) {
+	zkServers = strings.Split(zkServerList, ";")
 }
 
 func TraceZK(errChl chan error, gracefulStop chan os.Signal, eventChl chan Event) {
