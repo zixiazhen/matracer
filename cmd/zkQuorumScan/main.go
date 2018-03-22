@@ -85,7 +85,6 @@ func main() {
 		if err != nil {
 			fmt.Printf("Get service list failed: err: %s \n", err.Error())
 		}
-		//GetZKServerIPFromK8SZKService()
 		GetZKServerIPFromK8SZKServiceNew(serviceList)
 	} else if zkIPSource == "endpoint" {
 		GetZKServerIPFromK8SZKEndpoint()
