@@ -77,11 +77,13 @@ func main() {
 	signal.Notify(gracefulStop, syscall.SIGSYS)
 	signal.Notify(gracefulStop, syscall.SIGKILL)
 
+	fmt.Printf("zkIPSource: %s \n", zkIPSource)
+
 	//init zkServers ip
 	if zkIPSource == "service" {
 		serviceList, err := getZKServices()
 		if err != nil {
-			fmt.Printf("Get service list failed: err: %s ", err.Error())
+			fmt.Printf("Get service list failed: err: %s \n", err.Error())
 		}
 		//GetZKServerIPFromK8SZKService()
 		GetZKServerIPFromK8SZKServiceNew(serviceList)

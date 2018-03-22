@@ -2,15 +2,29 @@ package main
 
 import(
 	//"github.com/samuel/go-zookeeper/zk"
-	//"fmt"
 	//"time"
+	//"fmt"
+	//"sync"
+	"fmt"
 )
 
 func main() {
 
 
+	ch := make(chan string)
+	//go func(){
+	//	ch <- "a"
+	//}()
 
-	/*servers := []string{ "a", "b", "c", "d" }
+	go func(){
+		close(ch)
+	}()
+
+	out, ok := <-ch
+	fmt.Printf("%v | %v \n", out, ok)
+
+/*
+	servers := []string{ "a", "b", "c", "d" }
 	fmt.Println(servers)
 
 	var wg sync.WaitGroup
@@ -51,5 +65,5 @@ loop:
 	}
 
 	fmt.Println(leaders)
-*/
+	*/
 }
